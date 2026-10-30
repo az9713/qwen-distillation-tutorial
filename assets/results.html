@@ -1,0 +1,43 @@
+<div id="pe-results">
+  <h3>Held-out strict pass@1</h3>
+  <div id="pe-score-chart" role="img" aria-label="Exam accuracy ranges from 51.8 percent before training to 58.9 percent for the best on-policy student; the teacher scores 64 percent."></div>
+  <h3>Average generated tokens per task</h3>
+  <div id="pe-token-chart" role="img" aria-label="RL generates 2007 tokens per task; answer distillation generates 1401, a 30.2 percent reduction."></div>
+</div>
+<style>
+#pe-results { background:transparent;color:var(--foreground); }
+#pe-results .pe-result-row { margin:11px 0; }
+#pe-results .pe-result-label { display:flex;justify-content:space-between;gap:12px; }
+#pe-results .pe-result-track { height:15px;background:var(--muted);margin-top:3px; }
+#pe-results .pe-result-fill { height:100%;background:var(--viz-series-1); }
+#pe-results .pe-teacher { background:var(--viz-series-2); }
+#pe-results .pe-original { background:var(--muted-foreground); }
+#pe-results .pe-result-axis { display:flex;justify-content:space-between;color:var(--muted-foreground);margin:6px 0 18px; }
+</style>
+<script>
+(() => {
+  const root=document.getElementById('pe-results');
+  const scores=[['Original 4B',51.8,'original'],['RL starting checkpoint',58.4,''],['More RL',58.1,''],['Teacher answers',58.1,''],['Answers then RL',58.6,''],['Teacher probabilities',56.4,''],['On-policy step 20',58.9,''],['On-policy step 60',57.9,''],['27B teacher',64,'teacher']];
+  const tokens=[['RL starting checkpoint',2007,''],['Teacher answers',1401,'']];
+  const scoreCeiling=Math.ceil(Math.max(...scores.map(d=>d[1]))/10)*10;
+  const tokenCeiling=Math.ceil(Math.max(...tokens.map(d=>d[1]))/500)*500;
+  function render(id,data,max,unit,formatter){
+    const chart=root.querySelector(id);
+    const axis=document.createElement('div');axis.className='pe-result-axis text-small';
+    [0,max/2,max].forEach(v=>{const span=document.createElement('span');span.textContent=formatter(v);axis.appendChild(span);});
+    chart.appendChild(axis);
+    data.forEach(([name,value,type])=>{
+      const row=document.createElement('div');row.className='pe-result-row';
+      const label=document.createElement('div');label.className='pe-result-label';
+      const title=document.createElement('span');title.textContent=name;
+      const v=document.createElement('span');v.className='tabular-nums';v.textContent=unit==='%'?value.toFixed(1)+'%':value.toLocaleString('en-US');
+      label.append(title,v);
+      const track=document.createElement('div');track.className='pe-result-track';
+      const fill=document.createElement('div');fill.className='pe-result-fill'+(type?' pe-'+type:'');fill.style.width=(value/max*100)+'%';
+      track.appendChild(fill);row.append(label,track);chart.appendChild(row);
+    });
+  }
+  render('#pe-score-chart',scores,scoreCeiling,'%',v=>v+'%');
+  render('#pe-token-chart',tokens,tokenCeiling,'tokens',v=>v.toLocaleString('en-US'));
+})();
+</script>

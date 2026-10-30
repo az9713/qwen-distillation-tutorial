@@ -1,0 +1,109 @@
+<div id="pe-training-update">
+  <div class="viz-controls">
+    <label class="form-label">Training method
+      <select class="form-select" id="pe-method">
+        <option value="answer">Teacher answers</option>
+        <option value="probability">Teacher probabilities</option>
+        <option value="onpolicy">On-policy distillation</option>
+        <option value="rl">GRPO baseline</option>
+      </select>
+    </label>
+    <button type="button" class="btn" id="pe-back">Previous stage</button>
+    <button type="button" class="btn btn-primary" id="pe-next">Next stage</button>
+  </div>
+  <svg id="pe-flow" role="img" aria-label="Four stages of a training update"></svg>
+  <div id="pe-stage" class="text-small" aria-live="polite"></div>
+</div>
+<style>
+#pe-training-update { color:var(--foreground); background:transparent; }
+#pe-training-update #pe-flow { display:block; width:100%; height:312px; }
+#pe-training-update .flow-label { fill:var(--foreground); font-size:14px; }
+#pe-training-update .flow-detail { fill:var(--muted-foreground); font-size:12px; }
+#pe-training-update .flow-line { stroke:var(--border); stroke-width:2; }
+#pe-training-update .flow-node { fill:var(--background); stroke:var(--border); stroke-width:1; }
+#pe-training-update .flow-node.active { fill:var(--viz-series-1); stroke:none; }
+#pe-training-update .flow-number { fill:var(--foreground); font-size:12px; }
+#pe-training-update .flow-current { fill:var(--viz-series-1); }
+</style>
+<script>
+(() => {
+  const root = document.getElementById('pe-training-update');
+  const svg = root.querySelector('#pe-flow');
+  const method = root.querySelector('#pe-method');
+  const status = root.querySelector('#pe-stage');
+  const previous = root.querySelector('#pe-back');
+  const next = root.querySelector('#pe-next');
+  const data = {
+    answer: [
+      ['Give the teacher a task','Task and input data enter the sandbox'],
+      ['Teacher generates a solution','Teacher prefixes become training contexts'],
+      ['Keep a verified transcript','Selected assistant tokens are targets'],
+      ['Update the student','Imitate the demonstrated next tokens']
+    ],
+    probability: [
+      ['Use a teacher demonstration','Reuse a successful teacher transcript'],
+      ['Teacher scores its prefixes','Save top-20 alternatives at each position'],
+      ['Compare token distributions','Supervision includes alternative tokens'],
+      ['Update the student','Match probabilities at teacher contexts']
+    ],
+    onpolicy: [
+      ['Give the student a task','Current student works in the sandbox'],
+      ['Student generates an attempt','Student prefixes can include mistakes'],
+      ['Teacher scores student tokens','Feedback uses the actual student context'],
+      ['Update and sample again','New student attempts refresh the data']
+    ],
+    rl: [
+      ['Give the student a task','Current student works in the sandbox'],
+      ['Sample a group of attempts','Each attempt reaches a final outcome'],
+      ['Check final task rewards','Identical rewards give no relative contrast'],
+      ['Update the student','Reinforce above-average attempts']
+    ]
+  };
+  let stage = 0;
+  let prior = 0;
+  const ns = 'http://www.w3.org/2000/svg';
+  function add(tag, attrs, value) {
+    const el = document.createElementNS(ns,tag);
+    Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));
+    if (value !== undefined) el.textContent=value;
+    svg.appendChild(el);
+    return el;
+  }
+  function draw(animate=false) {
+    const width = Math.max(280,root.clientWidth);
+    svg.setAttribute('viewBox',`0 0 ${width} 312`);
+    svg.replaceChildren();
+    add('title',{},`${method.options[method.selectedIndex].text}: stage ${stage+1} of 4`);
+    add('desc',{},data[method.value].map((d,i)=>`${i+1}. ${d.join('. ')}`).join('. '));
+    add('line',{x1:22,y1:29,x2:22,y2:272,class:'flow-line'});
+    data[method.value].forEach((d,i)=>{
+      const y=29+i*81;
+      add('circle',{cx:22,cy:y,r:13,class:'flow-node'+(i===stage?' active':'')});
+      add('text',{x:22,y:y+4,'text-anchor':'middle',class:'flow-number'},String(i+1));
+      add('text',{x:47,y:y-2,class:'flow-label'},d[0]);
+      const words=d[1].split(' ');let line='';let yLine=y+18;
+      const chars=Math.floor((width-57)/6.6);
+      for(const word of words){
+        if((line+' '+word).trim().length>chars && line){add('text',{x:47,y:yLine,class:'flow-detail'},line);line=word;yLine+=17;}
+        else line+=(line?' ':'')+word;
+      }
+      if(line)add('text',{x:47,y:yLine,class:'flow-detail'},line);
+    });
+    const dot=add('circle',{cx:22,cy:29+stage*81,r:4,class:'flow-current'});
+    if(animate && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+      dot.animate([{transform:`translateY(${(prior-stage)*81}px)`},{transform:'translateY(0px)'}],{duration:550,easing:'ease-in-out'});
+    }
+    previous.disabled=stage===0;next.disabled=stage===3;
+    status.textContent=`Stage ${stage+1} of 4 · ${data[method.value][stage][0]}`;
+    svg.querySelectorAll('text').forEach(el=>{
+      const box=el.getBBox();
+      if(box.x+box.width>width-5)el.setAttribute('textLength',Math.max(0,width-52));
+    });
+  }
+  previous.addEventListener('click',()=>{prior=stage;stage=Math.max(0,stage-1);draw(true);});
+  next.addEventListener('click',()=>{prior=stage;stage=Math.min(3,stage+1);draw(true);});
+  method.addEventListener('change',()=>{stage=0;prior=0;draw();});
+  new ResizeObserver(()=>draw()).observe(root);
+  draw();
+})();
+</script>

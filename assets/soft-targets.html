@@ -1,0 +1,54 @@
+<div id="pe-targets">
+  <div class="viz-controls">
+    <label class="form-label" for="pe-tau">Temperature <output id="pe-tau-value">1.0</output>
+      <input type="range" class="form-range" id="pe-tau" min="0.5" max="4" step="0.1" value="1">
+    </label>
+  </div>
+  <div class="pe-target-columns">
+    <div><h3>One demonstrated token</h3><div id="pe-hard"></div></div>
+    <div><h3>Teacher probabilities</h3><div id="pe-soft"></div></div>
+  </div>
+  <div id="pe-target-status" class="text-small" aria-live="polite">Illustrative logits: .head = 3, .shape = 1, .info = 0</div>
+</div>
+<style>
+#pe-targets { background:transparent; color:var(--foreground); }
+#pe-targets .pe-target-columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:28px; }
+#pe-targets .pe-target-row { margin:16px 0; }
+#pe-targets .pe-target-label { display:flex; justify-content:space-between; gap:12px; }
+#pe-targets .pe-prob-track { height:18px; background:var(--muted); margin-top:5px; }
+#pe-targets .pe-prob-fill { height:100%; background:var(--viz-series-1); }
+#pe-targets .pe-hard-fill { background:var(--viz-series-2); }
+#pe-targets .pe-prob-fill.changing { transition:width 250ms ease; }
+@media(max-width:520px){#pe-targets .pe-target-columns{grid-template-columns:1fr;gap:0}}
+@media(prefers-reduced-motion:reduce){#pe-targets .pe-prob-fill.changing{transition:none}}
+</style>
+<script>
+(() => {
+  const root=document.getElementById('pe-targets');
+  const input=root.querySelector('#pe-tau');
+  const output=root.querySelector('#pe-tau-value');
+  const values=[{name:'.head',z:3},{name:'.shape',z:1},{name:'.info',z:0}];
+  const hard=root.querySelector('#pe-hard');
+  const soft=root.querySelector('#pe-soft');
+  const status=root.querySelector('#pe-target-status');
+  function row(d,p,kind){
+    const container=document.createElement('div');container.className='pe-target-row';
+    const label=document.createElement('div');label.className='pe-target-label';
+    const name=document.createElement('code');name.textContent=d.name;
+    const value=document.createElement('span');value.className='tabular-nums';value.textContent=p.toFixed(1)+'%';
+    const track=document.createElement('div');track.className='pe-prob-track';
+    const fill=document.createElement('div');fill.className='pe-prob-fill'+(kind==='hard'?' pe-hard-fill':'');fill.style.width=p+'%';
+    track.appendChild(fill);label.append(name,value);container.append(label,track);
+    return {container,value,fill};
+  }
+  const rows=values.map((d,i)=>{const a=row(d,i===0?100:0,'hard');hard.appendChild(a.container);const b=row(d,0,'soft');soft.appendChild(b.container);return b;});
+  function draw(animate=false){
+    const tau=Number(input.value);output.value=tau.toFixed(1);
+    const weights=values.map(d=>Math.exp((d.z-3)/tau));const sum=weights.reduce((a,b)=>a+b,0);
+    const probs=weights.map(w=>100*w/sum);
+    rows.forEach((r,i)=>{r.fill.classList.toggle('changing',animate);r.fill.style.width=probs[i]+'%';r.value.textContent=probs[i].toFixed(1)+'%';r.container.setAttribute('aria-label',values[i].name+': '+probs[i].toFixed(1)+' percent');});
+    status.textContent=`Illustrative logits 3, 1, 0 · .shape and .info together: ${(probs[1]+probs[2]).toFixed(1)}%`;
+  }
+  input.addEventListener('input',()=>draw(true));draw();
+})();
+</script>
