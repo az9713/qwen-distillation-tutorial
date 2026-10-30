@@ -302,7 +302,7 @@
 =-\sum_{t\in\mathcal A}\log p_\theta(y_t^T\mid h_t^T)</div>
 <p>Here, the superscript T denotes a teacher demonstration, h is its full context, and the set A contains supervised assistant-token positions. The teacher remains fixed; only student parameters change.</p>
 <p>For example, a successful transcript might teach the sequence “inspect columns, aggregate sales by publisher, choose the maximum, save the publisher name.” Copying that workflow can eliminate aimless inspection even without adding new data-analysis capabilities. This example is explanatory.</p>
-<h3 id="pe-results">PE results</h3>
+<h3 id="pe-results-section">PE results</h3>
 <p><strong>58.1% exam accuracy</strong>, compared with 58.4% for the RL starting point. Further RL after distillation reached <strong>58.6%</strong>. The unseen-dataset subgroup scored <strong>57.5%</strong> after answer distillation and <strong>62.1%</strong> after distillation followed by RL; the starting RL model had <strong>58.6%</strong> on that subgroup. The repository’s p = 0.04 for the 62.1% result compares with the original untrained model, not with the RL checkpoint. The subgroup contains only 87 tasks. <a href="https://github.com/PromtEngineer/smoldataenvs-grpo-spark/blob/main/README.md">Repository results</a></p>
 <p>The clearest operational gain was <strong>2,007 → 1,401 generated tokens per task</strong>:</p>
 <div class="math-equation">\frac{2007-1401}{2007}\times100\%\approx30.2\%</div>

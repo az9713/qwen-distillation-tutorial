@@ -27,7 +27,7 @@ def build():
     rendered = markdown.markdown(source, extensions=['tables', 'fenced_code', 'sane_lists'])
     soup = BeautifulSoup(rendered, 'html.parser')
     outline = []
-    used = set()
+    used = {element['id'] for element in soup.find_all(attrs={'id': True})}
     for heading in soup.find_all(re.compile(r'^h[1-6]$')):
         if heading.find_parent(class_='visualization'):
             continue
